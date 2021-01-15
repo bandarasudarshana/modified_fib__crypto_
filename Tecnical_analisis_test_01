@@ -1,0 +1,86 @@
+import pandas as pd
+import ta
+import yfinance as yf
+import plotly_express as pex
+from ta.volatility import BollingerBands
+from ta.momentum import ROCIndicator
+from ta.trend import MACD
+from ta.momentum import RSIIndicator
+from ta.momentum import StochasticOscillator
+from ta.trend import ADXIndicator
+
+class TechnicalAnalysis:
+    def __init__(self, ticker, period, interval):
+        self.ticker = ticker
+        self.period = period
+        self.interval = interval
+        self.stock = yf.Ticker(self.ticker)
+        self.df = self.stock.history(
+            period=self.period, interval=self.interval)
+
+    def __repr__(self):
+        return repr(self.df)
+
+    def bb(self, window, window_dev):
+        indicator_bb = BollingerBands(
+            close=self.df["Close"], window=window, window_dev=window_dev)
+
+        bb_df = pd.DataFrame()
+        
+        bb_df['bb_bbm'] = indicator_bb.bollinger_mavg()
+        bb_df['bb_bbh'] = indicator_bb.bollinger_hband()
+        bb_df['bb_bbl'] = indicator_bb.bollinger_lband()
+
+        bb_df['bb_bbhi'] = indicator_bb.bollinger_hband_indicator()
+        bb_df['Date']=bb_df.index
+        bb_df.dropna(inplace=True)
+
+        return bb_df
+
+    def roc(self, window):
+        indicator_roc = ROCIndicator(
+            close=self.df['Close'], window=window)
+
+        roc_df = pd.DataFrame()
+        roc_df['ROC'] = indicator_roc.roc()
+        roc_df['Date'] = roc_df.index
+        roc_df.dropna(inplace=True)
+        return roc_df
+
+    def macd(self, window_slow, window_fast, window_sign):
+        indicator_macd = MACD(
+            close=self.df['Close'], window_slow=window_slow, window_fast=window_fast, window_sign=window_sign)
+
+        macd_df = pd.DataFrame()
+        macd_df['MACD'] = indicator_macd.macd()
+        macd_df['MACD Signal'] = indicator_macd.macd_signal()
+        macd_df['MACD Difference'] = indicator_macd.macd_diff()
+
+        macd_df.dropna(inplace=True)
+
+        return macd_df
+    
+    def rsi(self,window):
+        indicator_rsi = RSIIndicator(close=self.df['Close'], window=window)
+        rsi_df = pd.DataFrame()
+        rsi_df['RSI'] = indicator_rsi.rsi()
+        rsi_df.dropna(inplace=True)
+          
+        return rsi_df
+    
+    def stoch(self,window,smooth_window):
+     indicator_stoch=StochasticOscillator(close=self.df['Close'],high=self.df['High'],low=self.df['Low'],window=window,smooth_window=smooth_window)
+     stoch_df = pd.DataFrame()
+     stoch_df['stoch'] = indicator_stoch.stoch()
+     stoch_df.dropna(inplace=True)
+          
+     return stoch_df
+
+    def adx(self,window):
+     indicator_adx = ADXIndicator(high=self.df['High'],low=self.df['Low'],close=self.df['Close'],window=window)
+     adx_df = pd.DataFrame()
+     adx_df['adx'] = indicator_adx.adx()
+     adx_df['Date']=adx_df.index
+     adx_df.dropna(inplace=True)
+          
+     return adx_df 

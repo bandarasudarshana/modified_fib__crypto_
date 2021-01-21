@@ -1,0 +1,59 @@
+# -*- coding: utf-8 -*-
+"""
+Created on Wed Jan 20 23:51:55 2021
+
+@author: Sudarshana Bandara
+"""
+import pandas as pd
+import json
+import gspread
+from oauth2client.service_account import ServiceAccountCredentials
+
+json_key = json.load(open(r'C:\Users\Sudarshana Bandara\Downloads\test04-5ec8f896239f.json'))
+scope = ["https://spreadsheets.google.com/feeds",'https://www.googleapis.com/auth/spreadsheets',"https://www.googleapis.com/auth/drive.file","https://www.googleapis.com/auth/drive"]
+
+
+credentials = ServiceAccountCredentials.from_json_keyfile_name(r'C:\Users\Sudarshana Bandara\Downloads\test04-5ec8f896239f.json', scope)
+gc = gspread.authorize(credentials)
+
+
+wks = gc.open("Assignment")
+
+ws_1 = wks.get_worksheet(1)
+ws_1
+ws_2 = wks.get_worksheet(0)
+ws_2
+dataframe_1 = pd.DataFrame(ws_1.get_all_records())
+dataframe_2 = pd.DataFrame(ws_2.get_all_records())
+
+dataframe_2.columns
+dataframe_1.columns
+
+#df = pd.merge(dataframe_1, dataframe_2, on=["Items"])
+frames_1 = [dataframe_1, dataframe_2]
+df=pd.concat(frames_1,axis=1, join="inner")
+
+df.head()
+# remove un named colunms
+df = df.loc[:, ~df.columns.str.contains('^Unnamed')]
+# remove duplicates
+df = df.loc[:,~df.columns.duplicated()]
+
+#create new colunm
+df['products'] = df[['Items','Quantity', 'Cost','Price']].apply(lambda x : '{}/{}/{}/{}'.format(x[0],x[1],x[2],x[3]), axis=1)
+
+# #add nessary dat colunms to new data frame
+data_set_final=pd.DataFrame()
+
+data_set_final['products']=df['products']
+data_set_final['Date']=df['Date']
+data_set_final['Invoice No']= df['Invoice No']
+data_set_final['Customer']=df['Customer']
+data_set_final['Status']=df['Status']
+
+#repalce white colunms with Nans
+for i in data_set_final.columns:
+    data_set_final[i][data_set_final[i].apply(lambda i: True if re.search('^\s*$', str(i)) else False)]=None
+#fill the Nans with privious colunm values
+data_set_final = data_set_final.ffill()
+
